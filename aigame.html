@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lane Racing Game</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #222;
+    color: white;
+    font-family: Arial, sans-serif;
+  }
+
+  #score {
+    margin: 20px auto 10px auto;
+    font-size: 36px;
+    font-weight: bold;
+    text-align: center;
+    width: 300px;
+  }
+
+  #game {
+    position: relative;
+    width: 300px;
+    height: 600px;
+    margin: 20px auto;
+    background: #555;
+    border: 4px solid white;
+  }
+
+  .lane-line {
+    position: absolute;
+    width: 6px;
+    height: 100%;
+    background: repeating-linear-gradient(
+      to bottom,
+      white 0px,
+      white 20px,
+      transparent 20px,
+      transparent 40px
+    );
+    opacity: 0.7;
+  }
+
+  .lane-line.left { left: 100px; }
+  .lane-line.right { left: 200px; }
+
+  .car {
+    position: absolute;
+    width: 60px;
+    height: 100px;
+    background-size: cover;
+    background-position: center;
+  }
+
+  #player {
+    bottom: 20px;
+    left: 120px;
+    transition: left 0.15s ease;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="100"><rect x="10" y="10" width="40" height="80" rx="10" fill="red"/><rect x="18" y="30" width="24" height="35" rx="5" fill="lightblue"/><circle cx="20" cy="15" r="4" fill="yellow"/><circle cx="40" cy="15" r="4" fill="yellow"/><circle cx="20" cy="85" r="5" fill="black"/><circle cx="40" cy="85" r="5" fill="black"/></svg>');
+  }
+
+  .obstacle {
+    top: -120px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="100"><rect x="10" y="10" width="40" height="80" rx="10" fill="yellow"/><rect x="18" y="20" width="24" height="40" rx="5" fill="black"/><circle cx="20" cy="85" r="5" fill="black"/><circle cx="40" cy="85" r="5" fill="black"/></svg>');
+  }
+
+  #gameOver {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  #gameOver button {
+    padding: 10px 20px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background: #00c853;
+    color: white;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="score">Score: 0</div>
+
+<div id="game">
+  <div class="lane-line left"></div>
+  <div class="lane-line right"></div>
+  <div id="player" class="car"></div>
+
+  <div id="gameOver">
+    <h2>Game Over</h2>
+    <button onclick="restartGame()">Restart</button>
+  </div>
+</div>
+
+<script>
+  const player = document.getElementById("player");
+  const game = document.getElementById("game");
+  const scoreDisplay = document.getElementById("score");
+  const gameOverScreen = document.getElementById("gameOver");
+
+  const lanes = [20, 120, 220];
+  let currentLane = 1;
+  let score = 0;
+  let speed = 3.5;
+  let running = true;
+
+  document.addEventListener("keydown", (e) => {
+    if (!running) return;
+    if (e.key === "ArrowLeft" && currentLane > 0) currentLane--;
+    if (e.key === "ArrowRight" && currentLane < 2) currentLane++;
+    player.style.left = lanes[currentLane] + "px";
+  });
+
+  function createObstacleRow() {
+    // ensure at least one open lane
+    let blocked = [false, false, false];
+    let blocks = Math.random() < 0.6 ? 1 : 2;
+
+    while (blocks > 0) {
+      let lane = Math.floor(Math.random() * 3);
+      if (!blocked[lane]) {
+        blocked[lane] = true;
+        blocks--;
+      }
+    }
+
+    if (blocked.every(b => b)) {
+      blocked[Math.floor(Math.random() * 3)] = false;
+    }
+
+    blocked.forEach((b, lane) => {
+      if (b) {
+        const obs = document.createElement("div");
+        obs.classList.add("car", "obstacle");
+        obs.style.left = lanes[lane] + "px";
+        obs.dataset.lane = lane;
+        obs.style.top = "-120px";
+        game.appendChild(obs);
+        obstacles.push(obs);
+      }
+    });
+  }
+
+  let obstacles = [];
+  let spawnTimer = 0;
+
+  function endGame() {
+    running = false;
+    gameOverScreen.style.display = "flex";
+  }
+
+  function restartGame() {
+    obstacles.forEach(o => o.remove());
+    obstacles = [];
+    score = 0;
+    speed = 3.5;
+    currentLane = 1;
+    player.style.left = lanes[currentLane] + "px";
+    scoreDisplay.textContent = "Score: 0";
+    gameOverScreen.style.display = "none";
+    running = true;
+    gameLoop();
+  }
+
+  function gameLoop() {
+    if (!running) return;
+
+    spawnTimer++;
+    if (spawnTimer > 80) { // slower, fairer spawning
+      createObstacleRow();
+      spawnTimer = 0;
+    }
+
+    obstacles.forEach((obs, index) => {
+      let top = parseFloat(obs.style.top);
+      top += speed;
+      obs.style.top = top + "px";
+
+      if (top > 600) {
+        obs.remove();
+        obstacles.splice(index, 1);
+        score++;
+        scoreDisplay.textContent = "Score: " + score;
+
+        if (score % 15 === 0) speed += 0.3; // slower difficulty ramp
+      }
+
+      // corrected collision: BACK is safe, FRONT can crash
+      const playerTop = 600 - 130;
+
+      // define a FRONT danger zone (top/front of the car)
+      const frontZoneEnd = playerTop + 50; // only top ~50px is dangerous
+
+      if (
+        top + 90 > playerTop && // obstacle reaches player area
+        top < frontZoneEnd &&   // only count if hitting the front
+        parseInt(obs.dataset.lane) === currentLane
+      ) {
+        endGame();
+      }
+    });
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  gameLoop();
+</script>
+
+</body>
+</html>

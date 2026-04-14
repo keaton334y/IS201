@@ -1,0 +1,48 @@
+body{
+    background-color: lightgrey
+}
+
+.first{
+    text-align: center;
+    font-family: cursive;
+    font-size: 20px;
+    background-color: black;
+    color: white;
+}
+
+.subhead{
+    text-align: center;
+    font-family: cursive;
+    font-size: 17px;
+    background-color: darkgray
+}
+
+.image{
+    text-align: center;
+}
+
+.info{
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif
+}
+
+.video{
+    text-align: center;
+
+}
+
+.foot{
+    text-align: center;
+    border-style: groove;
+    border-width: 5px;
+    padding: 5px;
+}
+
+.graph{
+    text-align: center;
+}
+
+.tableau-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
